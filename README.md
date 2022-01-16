@@ -1,43 +1,3 @@
-![CoroutineUsecasesOnAndroid](documentation/images/Logo-new.png)
-
-# Kotlin Coroutines - Use Cases on Android
-
-🎓 Learning Kotlin Coroutines for Android by example. 
-
-🚀 Sample implementations for real-world Android use cases. 
-
-🛠 Unit tests included!
-
-This repository is intended to be a "Playground Project". You can quickly look up and play around with the different Coroutine Android implementations.
-In the `playground` package you can play around with Coroutines examples that run directly on the JVM.
-
-## 🔧 Project Setup
-
-Every use case is using its own `Activity` and `JetPack ViewModel`. The `ViewModel`s contain all the interesting Coroutine related code.
-`Activities` listen to `LiveData` events of the `ViewModel` and render received `UiState`s.
-
-This project is using retrofit/okhttp together with a `MockNetworkInterceptor`. This lets you define how the API should behave.
-Everything can be configured: http status codes, response data and delays. Every use case defines a certain behaviour of the Mock API.
-The API has 2 endpoints. One returns the names of the most recent Android versions and the other one returns the features of a certain
-Android version.
-
-Unit Tests exist for most use cases.
-
-## ✍️ Related blog posts
-* Why exception handling with Kotlin Coroutines is so hard and how to successfully master it! [[link](https://www.lukaslechner.com/why-exception-handling-with-kotlin-coroutines-is-so-hard-and-how-to-successfully-master-it/)]
-* Understanding Kotlin Coroutines with this mental model [[link](https://www.lukaslechner.com/understanding-kotlin-coroutines-with-this-mental-model/)]
-* Do I need to call suspend functions of Retrofit and Room on a background thread? [[link](https://www.lukaslechner.com/do-i-need-to-call-suspend-functions-of-retrofit-and-room-on-a-background-thread/)]
-* Comparing Kotlin Coroutines with Callbacks and RxJava [[link](https://www.lukaslechner.com/comparing-kotlin-coroutines-with-callbacks-and-rxjava/)]
-* How to run an expensive calculation with Kotlin Coroutines on the Android Main Thread without freezing the UI [[link](https://www.lukaslechner.com/how-to-run-an-expensive-calculation-with-kotlin-coroutines-on-the-android-main-thread-without-freezing-the-ui/)]
-
-Sign up to my [newsletter](https://www.lukaslechner.com/newsletter/) to never miss a new blog post. I will publish new blog posts about Coroutines on a regular basis.
-
-## 🎓 Online Course
-
-This project is the foundation of a comprehensive Online Course about "Mastering Kotlin Coroutines for Android Development",on which I am currently working on.
-
-Sign up to my [newsletter](https://www.lukaslechner.com/newsletter/) to get more information once it is released!
-
 ## ⭐️ Use Cases
 1. [Perform single network request](#1-perform-single-network-request)
 2. [Perform two sequential network requests](#2-perform-two-sequential-network-requests)
@@ -213,26 +173,3 @@ You can play around and check the performance of different configurations!
 ## 👷‍♀️ Contributing 👷‍♂️
 
 I am currently learning Coroutines myself. So if you have any ideas for or improvements or other use cases, feel free to create a pull request or an issue.
-
-## Author
-
-![LukasLechner](documentation/images/lukle.png)
-
-[Lukas Lechner](https://www.lukaslechner.com)
-
-[Twitter](https://twitter.com/LukasLechnerDev) 
-
-## License
-
-Licensed under the Apache License, Version 2.0 (the "License").
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-You agree that all contributions to this repository, in the form of fixes, pull-requests, new examples etc. follow the above-mentioned license.
