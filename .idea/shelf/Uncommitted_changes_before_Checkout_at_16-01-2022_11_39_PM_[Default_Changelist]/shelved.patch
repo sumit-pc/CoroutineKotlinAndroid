@@ -1,0 +1,238 @@
+Index: app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase7/TimeoutAndRetryViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.lukaslechner.coroutineusecasesonandroid.usecases.coroutines.usecase7\r\n\r\nimport com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel\r\nimport com.lukaslechner.coroutineusecasesonandroid.mock.MockApi\r\n\r\nclass TimeoutAndRetryViewModel(\r\n    private val api: MockApi = mockApi()\r\n) : BaseViewModel<UiState>() {\r\n\r\n    fun performNetworkRequest() {\r\n        uiState.value = UiState.Loading\r\n        val numberOfRetries = 2\r\n        val timeout = 1000L\r\n\r\n        // TODO: Exercise 3\r\n        // switch to branch \"coroutine_course_full\" to see solution\r\n\r\n        // run api.getAndroidVersionFeatures(27) and api.getAndroidVersionFeatures(28) in parallel\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase7/TimeoutAndRetryViewModel.kt b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase7/TimeoutAndRetryViewModel.kt
+--- a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase7/TimeoutAndRetryViewModel.kt	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase7/TimeoutAndRetryViewModel.kt	(date 1642354596288)
+@@ -1,7 +1,13 @@
+ package com.lukaslechner.coroutineusecasesonandroid.usecases.coroutines.usecase7
+ 
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
+ import com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel
+ import com.lukaslechner.coroutineusecasesonandroid.mock.MockApi
++import kotlinx.coroutines.*
++import timber.log.Timber
++import java.lang.Exception
++import java.lang.NullPointerException
+ 
+ class TimeoutAndRetryViewModel(
+     private val api: MockApi = mockApi()
+@@ -12,9 +18,63 @@
+         val numberOfRetries = 2
+         val timeout = 1000L
+ 
+-        // TODO: Exercise 3
+-        // switch to branch "coroutine_course_full" to see solution
++        val androidFeature27 = viewModelScope.async {
++            retryWithTimeout(numberOfRetries, timeout){
++                api.getAndroidVersionFeatures(27)
++            }
++        }
++
++        val androidFeature28 = viewModelScope.async {
++            retryWithTimeout(numberOfRetries, timeout) {
++                api.getAndroidVersionFeatures(28)
++            }
++        }
++
++        viewModelScope.launch {
++            try {
++                val featuresAll = listOf(
++                    androidFeature27,
++                    androidFeature28
++                ).awaitAll()
+ 
+-        // run api.getAndroidVersionFeatures(27) and api.getAndroidVersionFeatures(28) in parallel
++                uiState.value = UiState.Success(featuresAll)
++
++            }catch (e: Exception){
++                Timber.e(e)
++                uiState.value = UiState.Error("Network Request failed")
++            }
++        }
+     }
++
++    private suspend fun <T> retryWithTimeout(
++    numberOfRetry: Int,
++    timeout: Long,
++    block: suspend () -> T) =
++        retry(numberOfRetry) {
++            withTimeout(timeout) {
++                block()
++            }
++        }
++
++
++    private suspend fun <T> retry(
++        numberOfRetry: Int,
++        initialDelay: Long = 100,
++        maxDelayMillis: Long = 1000,
++        factor: Double = 2.0,
++        block:suspend () -> T): T {
++        var currentDelay = initialDelay
++        repeat(numberOfRetry){
++            try {
++               return block()
++            }catch (exception : Exception){
++                Timber.e(exception)
++            }
++            delay(currentDelay)
++            currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelayMillis)
++        }
++
++        return block()
++    }
++
+ }
+\ No newline at end of file
+Index: .idea/runConfigurations.xml
+===================================================================
+diff --git a/.idea/runConfigurations.xml b/.idea/runConfigurations.xml
+deleted file mode 100644
+--- a/.idea/runConfigurations.xml	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ /dev/null	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
+@@ -1,12 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="RunConfigurationProducerService">
+-    <option name="ignoredProducers">
+-      <set>
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.AllInPackageGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestClassGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestMethodGradleConfigurationProducer" />
+-      </set>
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>apply plugin: 'com.android.application'\r\napply plugin: 'kotlin-android'\r\napply plugin: 'kotlin-android-extensions'\r\napply plugin: 'kotlin-kapt'\r\n\r\nandroid {\r\n    compileSdkVersion 29\r\n    buildToolsVersion \"29.0.2\"\r\n\r\n    defaultConfig {\r\n        applicationId \"com.lukaslechner.coroutineusecasesonandroid\"\r\n        minSdkVersion 21\r\n        targetSdkVersion 29\r\n        versionCode 1\r\n        versionName \"1.0\"\r\n\r\n        testInstrumentationRunner \"androidx.test.runner.AndroidJUnitRunner\"\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            minifyEnabled false\r\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'\r\n        }\r\n    }\r\n\r\n    viewBinding {\r\n        enabled = true\r\n    }\r\n\r\n    compileOptions {\r\n        sourceCompatibility JavaVersion.VERSION_1_8\r\n        targetCompatibility JavaVersion.VERSION_1_8\r\n    }\r\n\r\n    kotlinOptions {\r\n        jvmTarget = JavaVersion.VERSION_1_8.toString()\r\n    }\r\n\r\n}\r\n\r\ndependencies {\r\n\r\n    def lifecycle_version = \"2.2.0\"\r\n    def coroutines_version = \"1.3.9\"\r\n\r\n    implementation fileTree(dir: 'libs', include: ['*.jar'])\r\n    implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version\"\r\n\r\n    implementation \"org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version\"\r\n    implementation \"org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version\"\r\n\r\n    implementation 'androidx.appcompat:appcompat:1.1.0'\r\n    implementation 'com.google.android.material:material:1.1.0'\r\n\r\n    implementation 'androidx.core:core-ktx:1.2.0'\r\n    implementation \"androidx.activity:activity-ktx:1.1.0\"\r\n\r\n    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'\r\n    implementation 'androidx.recyclerview:recyclerview:1.1.0'\r\n    implementation 'androidx.cardview:cardview:1.0.0'\r\n\r\n    implementation \"androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version\"\r\n    implementation \"androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version\"\r\n\r\n    implementation 'com.squareup.retrofit2:retrofit:2.7.1'\r\n    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.7.1'\r\n    implementation 'com.google.code.gson:gson:2.8.6'\r\n    implementation 'com.squareup.retrofit2:converter-gson:2.7.1'\r\n\r\n    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'\r\n    implementation 'io.reactivex.rxjava2:rxjava:2.2.19'\r\n    implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'\r\n\r\n    implementation \"androidx.lifecycle:lifecycle-common-java8:$lifecycle_version\"\r\n\r\n    def work_manager_version = \"2.3.4\"\r\n    implementation \"androidx.work:work-runtime:$work_manager_version\"\r\n    implementation \"androidx.work:work-runtime-ktx:$work_manager_version\"\r\n\r\n    implementation 'com.jakewharton.timber:timber:4.7.1'\r\n\r\n    def room_version = \"2.2.5\"\r\n    implementation \"androidx.room:room-runtime:$room_version\"\r\n    implementation \"androidx.room:room-ktx:$room_version\"\r\n    kapt \"androidx.room:room-compiler:$room_version\"\r\n\r\n    testImplementation 'junit:junit:4.12'\r\n    testImplementation 'androidx.arch.core:core-testing:2.1.0'\r\n    testImplementation \"org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version\"\r\n    testImplementation 'com.squareup.retrofit2:retrofit-mock:2.7.1'\r\n\r\n    androidTestImplementation 'androidx.test.ext:junit:1.1.1'\r\n    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle b/app/build.gradle
+--- a/app/build.gradle	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ b/app/build.gradle	(date 1642339894748)
+@@ -24,8 +24,8 @@
+         }
+     }
+ 
+-    viewBinding {
+-        enabled = true
++    buildFeatures {
++        viewBinding true
+     }
+ 
+     compileOptions {
+@@ -37,6 +37,8 @@
+         jvmTarget = JavaVersion.VERSION_1_8.toString()
+     }
+ 
++
++
+ }
+ 
+ dependencies {
+@@ -65,7 +67,7 @@
+ 
+     implementation 'com.squareup.retrofit2:retrofit:2.7.1'
+     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.7.1'
+-    implementation 'com.google.code.gson:gson:2.8.6'
++    implementation 'com.google.code.gson:gson:2.8.8'
+     implementation 'com.squareup.retrofit2:converter-gson:2.7.1'
+ 
+     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+@@ -92,4 +94,6 @@
+ 
+     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
++
++
+ }
+Index: app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase5/NetworkRequestWithTimeoutViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.lukaslechner.coroutineusecasesonandroid.usecases.coroutines.usecase5\r\n\r\nimport androidx.lifecycle.viewModelScope\r\nimport com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel\r\nimport com.lukaslechner.coroutineusecasesonandroid.mock.MockApi\r\nimport kotlinx.coroutines.TimeoutCancellationException\r\nimport kotlinx.coroutines.launch\r\nimport kotlinx.coroutines.withTimeout\r\nimport kotlinx.coroutines.withTimeoutOrNull\r\n\r\nclass NetworkRequestWithTimeoutViewModel(\r\n    private val api: MockApi = mockApi()\r\n) : BaseViewModel<UiState>() {\r\n\r\n    fun performNetworkRequest(timeout: Long) {\r\n        uiState.value = UiState.Loading\r\n        // usingWithTimeout(timeout)\r\n        usingWithTimeoutOrNull(timeout)\r\n    }\r\n\r\n    private fun usingWithTimeout(timeout: Long) {\r\n        viewModelScope.launch {\r\n            try {\r\n                val recentVersions = withTimeout(timeout) {\r\n                    api.getRecentAndroidVersions()\r\n                }\r\n                uiState.value = UiState.Success(recentVersions)\r\n            } catch (timeoutCancellationException: TimeoutCancellationException) {\r\n                uiState.value = UiState.Error(\"Network Request timed out!\")\r\n            } catch (exception: Exception) {\r\n                uiState.value = UiState.Error(\"Network Request failed!\")\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun usingWithTimeoutOrNull(timeout: Long) {\r\n        viewModelScope.launch {\r\n            try {\r\n                val recentVersions = withTimeoutOrNull(timeout) {\r\n                    api.getRecentAndroidVersions()\r\n                }\r\n\r\n                if (recentVersions != null) {\r\n                    uiState.value = UiState.Success(recentVersions)\r\n                } else {\r\n                    uiState.value = UiState.Error(\"Network Request timed out!\")\r\n                }\r\n            } catch (exception: Exception) {\r\n                uiState.value = UiState.Error(\"Network Request failed!\")\r\n            }\r\n        }\r\n    }\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase5/NetworkRequestWithTimeoutViewModel.kt b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase5/NetworkRequestWithTimeoutViewModel.kt
+--- a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase5/NetworkRequestWithTimeoutViewModel.kt	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase5/NetworkRequestWithTimeoutViewModel.kt	(date 1642347534506)
+@@ -3,10 +3,7 @@
+ import androidx.lifecycle.viewModelScope
+ import com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel
+ import com.lukaslechner.coroutineusecasesonandroid.mock.MockApi
+-import kotlinx.coroutines.TimeoutCancellationException
+-import kotlinx.coroutines.launch
+-import kotlinx.coroutines.withTimeout
+-import kotlinx.coroutines.withTimeoutOrNull
++import kotlinx.coroutines.*
+ 
+ class NetworkRequestWithTimeoutViewModel(
+     private val api: MockApi = mockApi()
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_1_8\" project-jdk-name=\"1.8\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ b/.idea/misc.xml	(date 1642339896480)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="1.8" project-jdk-type="JavaSDK">
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+Index: app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase3/PerformNetworkRequestsConcurrentlyViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.lukaslechner.coroutineusecasesonandroid.usecases.coroutines.usecase3\r\n\r\nimport androidx.lifecycle.viewModelScope\r\nimport com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel\r\nimport com.lukaslechner.coroutineusecasesonandroid.mock.MockApi\r\nimport kotlinx.coroutines.launch\r\n\r\nclass PerformNetworkRequestsConcurrentlyViewModel(\r\n    private val mockApi: MockApi = mockApi()\r\n) : BaseViewModel<UiState>() {\r\n\r\n    fun performNetworkRequestsSequentially() {\r\n        uiState.value = UiState.Loading\r\n        viewModelScope.launch {\r\n            try {\r\n                val oreoFeatures = mockApi.getAndroidVersionFeatures(27)\r\n                val pieFeatures = mockApi.getAndroidVersionFeatures(28)\r\n                val android10Features = mockApi.getAndroidVersionFeatures(29)\r\n\r\n                val versionFeatures = listOf(oreoFeatures, pieFeatures, android10Features)\r\n                uiState.value = UiState.Success(versionFeatures)\r\n\r\n            } catch (exception: Exception) {\r\n                uiState.value = UiState.Error(\"Network Request failed\")\r\n            }\r\n        }\r\n    }\r\n\r\n    fun performNetworkRequestsConcurrently() {\r\n        // TODO: Exercise 2\r\n        // switch to branch \"coroutine_course_full\" to see solution\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase3/PerformNetworkRequestsConcurrentlyViewModel.kt b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase3/PerformNetworkRequestsConcurrentlyViewModel.kt
+--- a/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase3/PerformNetworkRequestsConcurrentlyViewModel.kt	(revision ba94943cad900ebe7840f4c15208b0ba11036239)
++++ b/app/src/main/java/com/lukaslechner/coroutineusecasesonandroid/usecases/coroutines/usecase3/PerformNetworkRequestsConcurrentlyViewModel.kt	(date 1642347743477)
+@@ -3,6 +3,8 @@
+ import androidx.lifecycle.viewModelScope
+ import com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel
+ import com.lukaslechner.coroutineusecasesonandroid.mock.MockApi
++import kotlinx.coroutines.async
++import kotlinx.coroutines.awaitAll
+ import kotlinx.coroutines.launch
+ 
+ class PerformNetworkRequestsConcurrentlyViewModel(
+@@ -27,7 +29,17 @@
+     }
+ 
+     fun performNetworkRequestsConcurrently() {
+-        // TODO: Exercise 2
+-        // switch to branch "coroutine_course_full" to see solution
++        uiState.value = UiState.Loading
++
++        viewModelScope.launch {
++            val androidVersion = mockApi.getRecentAndroidVersions()
++            val androidVersionFeatures = androidVersion.map { androidVersion ->
++                viewModelScope.async { mockApi.getAndroidVersionFeatures(androidVersion.apiLevel) }
++            }
++
++            val versionDeferred = androidVersionFeatures.awaitAll()
++            uiState.value = UiState.Success(versionDeferred)
++        }
++
+     }
+ }
+\ No newline at end of file
